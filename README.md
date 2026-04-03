@@ -64,7 +64,7 @@
   }
 }
 ```
-*更多关于自定义 Sprite 动画和表情的细节，请参考 [配置指南](./CONFIG_GUIDE.md)。*
+*更多关于自定义 Sprite 动画和表情的细节，请参考 [配置指南](./CONFIG_GUIDE.txt)。*
 
 ---
 
@@ -128,7 +128,7 @@ After patching, edit your Claude configuration file (typically `~/.claude.json`)
   }
 }
 ```
-*For detailed sprite and face customization, see [Configuration Reference](./CONFIG_GUIDE.md).*
+*For detailed sprite and face customization, see [Configuration Reference](./CONFIG_GUIDE.txt).*
 
 ---
 
