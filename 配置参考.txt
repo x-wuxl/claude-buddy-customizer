@@ -1,0 +1,270 @@
+# Custom Buddy 配置参考
+
+> 适用补丁: `apply-claude-code-custom-buddy-fix.sh` / `.ps1`
+> 配置位置: `~/.claude.json`（macOS/Linux）或 `%USERPROFILE%\.claude.json`（Windows）
+
+---
+
+## 配置结构
+
+```jsonc
+{
+  // ━━━ Soul（灵魂）━━━
+  // 控制伙伴的身份和行为。影响 buddy_react API 返回的反应风格。
+  // 正常流程由 /buddy 首次孵化时模型生成，也可手动写入跳过孵化。
+  "companion": {
+    "name": "Nimbus",                  // 伙伴名字（1-14 字符）
+    "personality": "A brooding ...",   // 个性描述（≤200 字符，影响反应风格）
+    "hatchedAt": 1743465600000         // 孵化时间戳（Unix ms）
+  },
+
+  // ━━━ Bones Override（骨架覆盖）━━━
+  // 覆盖由 userId 确定性生成的外观和属性。
+  // 所有字段可选——只写需要覆盖的，其余保留原始 roll 结果。
+  "companionOverride": {
+    "species":     "dragon",           // 物种（决定 ASCII sprite 外观）
+    "rarity":      "legendary",        // 稀有度（决定颜色主题和星级）
+    "eye":         "✦",                // 眼睛字符（嵌入 sprite 的 {E} 位置）
+    "hat":         "wizard",           // 帽子（覆盖 sprite 第 0 行）
+    "shiny":       true,               // 闪光标记（属性卡显示 ✨ SHINY ✨）
+    "stats": {                         // 五维能力值（0-100，可只覆盖部分）
+      "DEBUGGING": 100,
+      "PATIENCE":  100,
+      "CHAOS":     0,
+      "WISDOM":    100,
+      "SNARK":     0
+    },
+    "customFace":   "({E}ω{E})",       // 自定义单行表情（窄终端用）
+    "customSprite": [ ... ]            // 自定义 ASCII sprite 帧（见下方）
+  },
+
+  // ━━━ 静音控制 ━━━
+  "companionMuted": false              // true = 隐藏伙伴（/buddy off 设置）
+}
+```
+
+---
+
+## 字段详解
+
+### `companion`（必需）
+
+伙伴不存在时 buddy 功能不会激活。手动写入可跳过孵化流程。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `name` | string | 1-14 chars | 显示在 sprite 下方、属性卡标题、footer pill。用户在对话中提及此名字时触发 `addressed` 模式 |
+| `personality` | string | ≤200 chars | 传递给 `buddy_react` API，决定伙伴的反应风格和语气。越具体越好 |
+| `hatchedAt` | number | Unix ms | 孵化时间戳，仅用于记录，不影响功能 |
+
+**personality 撰写建议：**
+- 包含具体的行为习惯（"sighs through tentacles"）而非泛泛描述（"funny"）
+- 包含对代码的态度（"judges variable names"）
+- 提及 stats 相关的倾向（高 SNARK → 毒舌，高 PATIENCE → 温和）
+- buddy_react API 会根据此字段生成所有反应
+
+### `companionOverride`（可选）
+
+不设置时使用 `hash(userId)` 确定性生成的默认骨架。设置后逐字段覆盖。
+
+#### `species` — 物种
+
+决定 ASCII sprite 的外观。18 种内置物种：
+
+| 物种 | 外观特征 | 物种 | 外观特征 |
+|------|---------|------|---------|
+| `duck` | `<(· )___` 鸭子 | `octopus` | `~(··)~` 章鱼 |
+| `goose` | `(·>` 鹅 | `owl` | `(·)(·)` 猫头鹰 |
+| `blob` | `(· ·)` 可变形果冻 | `penguin` | `(·>·)` 企鹅 |
+| `cat` | `=·ω·=` 猫 | `turtle` | `[·_·]` 乌龟 |
+| `dragon` | `<·~·>` 龙 | `snail` | `·(@)` 蜗牛 |
+| `ghost` | `/··\` 幽灵 | `cactus` | `\|· ·\|` 仙人掌 |
+| `axolotl` | `}·.·{` 美西螈 | `robot` | `[··]` 机器人 |
+| `capybara` | `(·oo·)` 水豚 | `rabbit` | `(·..·)` 兔子 |
+| `mushroom` | `\|· ·\|` 蘑菇 | `chonk` | `(·.·)` 胖猫 |
+
+设置 `customSprite` 时可使用任意自定义名称（如 `"fox"`、`"pikachu"`）。
+
+#### `rarity` — 稀有度
+
+决定 UI 颜色主题和星级显示：
+
+| 值 | 星级 | 颜色 | 用途 |
+|----|------|------|------|
+| `common` | ★ | 灰色 (`inactive`) | sprite 边框、名字、属性卡边框 |
+| `uncommon` | ★★ | 绿色 (`success`) | 同上 |
+| `rare` | ★★★ | 蓝色 (`permission`) | 同上 |
+| `epic` | ★★★★ | 品红 (`autoAccept`) | 同上 |
+| `legendary` | ★★★★★ | 金色 (`warning`) | 同上 |
+
+#### `eye` — 眼睛字符
+
+嵌入 sprite 中 `{E}` 占位符的位置。6 种内置 + 支持任意单字符：
+
+内置: `·` `✦` `×` `◉` `@` `°`
+
+可使用任意 Unicode 字符（如 `★` `♦` `◆`），但需确保在终端中占 1 列宽。
+
+#### `hat` — 帽子
+
+覆盖 sprite 第 0 行（仅在该行为空白时生效）：
+
+| 值 | 渲染 | 值 | 渲染 |
+|----|------|-----|------|
+| `none` | （无帽子） | `halo` | `(   )` |
+| `crown` | `\^^^/` | `wizard` | `/^\` |
+| `tophat` | `[___]` | `beanie` | `(___)` |
+| `propeller` | `-+-` | `tinyduck` | `,>` |
+
+#### `shiny` — 闪光
+
+`true` 时属性卡显示 `✨ SHINY ✨` 标记。纯装饰，不影响功能。
+原始 roll 中仅 1% 概率出现。
+
+#### `stats` — 五维能力值
+
+| 属性 | 含义 | 高值倾向 | 低值倾向 |
+|------|------|---------|---------|
+| `DEBUGGING` | 调试能力 | 注意 bug、边界情况、off-by-one | 忽略错误 |
+| `PATIENCE` | 耐心 | 温和、鼓励、冷静 | 急躁、不耐烦 |
+| `CHAOS` | 混乱 | 不可预测、跑题、荒谬 | 稳定、按部就班 |
+| `WISDOM` | 智慧 | 哲学思考、大局观 | 短视、表面 |
+| `SNARK` | 毒舌 | 讽刺、刻薄、犀利 | 友善、正面 |
+
+- 范围: 0-100
+- **可部分覆盖**: 只写需要改的字段，其余保留原始 roll 值
+- 传递给 `buddy_react` API，影响反应角度
+- 属性卡中以 `█░` 条形图展示
+
+```jsonc
+// 只覆盖两项，其余保持原始值
+"stats": { "DEBUGGING": 100, "SNARK": 0 }
+```
+
+#### `customFace` — 自定义单行表情
+
+窄终端（<100 列）时，sprite 折叠为单行 face + 名字。
+
+- 使用 `{E}` 作为眼睛占位符，运行时替换为 `eye` 字段值
+- 不设置时使用内置 `renderFace()` 的 switch 逻辑
+- 示例: `"({E}ω{E})"` → `(✦ω✦)`
+
+#### `customSprite` — 自定义 ASCII sprite
+
+完全自定义的 ASCII art 动画帧。
+
+**格式:** `Array<Array<string>>` — 1-3 帧，每帧 5 行字符串
+
+**规则:**
+| 维度 | 约束 | 说明 |
+|------|------|------|
+| 帧数 | 1-3 | 1=静态，2=有晃动，3=完整动画 |
+| 每帧行数 | 5 行 | 固定 5 行高度 |
+| 每行宽度 | ~12 字符 | 所有行应等宽 |
+| 眼睛 | `{E}` 占位符 | 运行时替换为 `eye` 值 |
+| 第 0 行 | 帽子槽 | Frame 0-1 保持空白（供 hat 覆盖）；Frame 2 可用于特效 |
+
+**帧语义:**
+| 帧 | 用途 | 播放时机 |
+|----|------|---------|
+| Frame 0 | 静止/默认 | 大部分时间 |
+| Frame 1 | 小幅晃动 | 偶尔（idle 动画） |
+| Frame 2 | 特效（可用第 0 行） | 稀少/有反应时 |
+
+**动画时序:**
+- Idle: 每 500ms 切换一次，按序列 `[0,0,0,0,1,0,0,0,-1,0,0,2,0,0,0]` 播放
+- 有反应/pet 时: 快速循环所有帧
+- `-1` = 眨眼（frame 0 + 眼睛替换为 `-`）
+
+**完整示例（狐狸）:**
+
+```json
+"customSprite": [
+  ["            ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_) "],
+  ["            ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_)~"],
+  ["    ~ ~     ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_) "]
+]
+```
+
+渲染效果（eye=✦）:
+
+```
+Frame 0 (idle):     Frame 1 (fidget):   Frame 2 (sparks):
+                                           ~ ~
+   /\_/\               /\_/\               /\_/\
+  ( ✦ ω ✦)            ( ✦ ω ✦)            ( ✦ ω ✦)
+  /|    |\            /|    |\            /|    |\
+ (_|    |_)          (_|    |_)~         (_|    |_)
+```
+
+---
+
+## 配置优先级
+
+```
+companionOverride.customSprite  →  优先于内置 BODIES[species]
+companionOverride.customFace    →  优先于内置 renderFace() switch
+companionOverride.{bones 字段}  →  覆盖 hash(userId) 生成的对应字段
+companionOverride.stats (部分)  →  与原始 stats 合并（非替换）
+companion.{soul 字段}           →  直接使用，不做验证
+```
+
+---
+
+## 行为矩阵
+
+| 用户类型 | `/buddy` 命令 | 属性卡 / pet | `buddy_react` 反应 |
+|---------|--------------|-------------|-------------------|
+| OAuth firstParty | 可用 | 可用 | 可用 |
+| OAuth + NONESSENTIAL 禁用 | **可用** (补丁) | 可用 | **可用** (补丁) |
+| API Key (无 OAuth) | **可用** (补丁) | 可用 | 静默跳过 |
+| Bedrock / Vertex | **可用** (补丁) | 可用 | 静默跳过 |
+
+> `buddy_react` 需要 OAuth firstParty 认证（组织 UUID + Bearer token）。
+> 无 OAuth 时命令和 UI 正常工作，但伙伴不会在气泡中说话。
+
+---
+
+## 最小配置（仅改名字）
+
+```json
+{
+  "companion": {
+    "name": "Spark",
+    "personality": "Enthusiastic about clean code",
+    "hatchedAt": 1743465600000
+  }
+}
+```
+
+## 完整配置（全面自定义）
+
+```json
+{
+  "companion": {
+    "name": "Foxfire",
+    "personality": "A mischievous fox who smells memory leaks and hisses at callback hell",
+    "hatchedAt": 1743465600000
+  },
+  "companionOverride": {
+    "species": "fox",
+    "rarity": "legendary",
+    "eye": "◉",
+    "hat": "none",
+    "shiny": true,
+    "stats": {
+      "DEBUGGING": 100,
+      "PATIENCE": 100,
+      "CHAOS": 0,
+      "WISDOM": 100,
+      "SNARK": 0
+    },
+    "customFace": "({E}ω{E})",
+    "customSprite": [
+      ["            ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_) "],
+      ["            ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_)~"],
+      ["    ~ ~     ", "   /\\_/\\    ", "  ( {E} ω {E})  ", "  /|    |\\  ", " (_|    |_) "]
+    ]
+  }
+}
+```
